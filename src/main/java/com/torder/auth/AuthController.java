@@ -1,6 +1,7 @@
 package com.torder.auth;
 
-
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -10,11 +11,10 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 
-
+@Tag(name = "Authentication", description = "API endpoints for user authentication and registration")
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
-
 
     private final AuthService authService;
 
@@ -24,6 +24,7 @@ public class AuthController {
 
 
 
+    @Operation(summary = "Register a new user", description = "Creates a new user account with the provided credentials")
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody RegisterRequest request, HttpServletResponse response) {
         try {
@@ -37,6 +38,7 @@ public class AuthController {
     }
 
 
+    @Operation(summary = "Authenticate user", description = "Authenticates a user with the provided credentials and returns a JWT token")
     @PostMapping("/authenticate")
     public ResponseEntity<?> authenticate(@RequestBody AuthRequest request, HttpServletResponse response) {
 
