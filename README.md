@@ -85,6 +85,21 @@ t-order/
 └── .env
 ```
 
+## API Documentation
+
+### Base URL
+
+http://localhost:8080
+
+### Swagger UI
+
+Access the interactive API documentation at:
+
+http://localhost:8080/swagger-ui/index.html
+
+
+
+
 ## License
 
 This project is proprietary and confidential. All rights reserved.
