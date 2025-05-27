@@ -31,27 +31,25 @@ public class NegocioClienteService {
 
     }
 
-    private void getEmailYValidar() {
+    private void validarEmail() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
 
         User usuario = repositorioUsuario.findByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario no encontrado"));
-        if (usuario.getRole() != Role.ADMIN) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Se requiere rol de administrador");
-        }
+
     }
 
 
     public Page<NegocioDTO> obtenerTodos(Pageable pageable) {
-        getEmailYValidar();
+        validarEmail();
 
 
-    Page<NegocioCliente> negocios = repositorioNegocioCliente.findAll(pageable);
+        Page<NegocioCliente> negocios = repositorioNegocioCliente.findAll(pageable);
         return negocios.map(this::convertirADTO);
     }
 
     public Optional<NegocioDTO> obtenerPorId(Long id) {
-        getEmailYValidar();
+        validarEmail();
 
         NegocioCliente negocioCliente = repositorioNegocioCliente.findById(id).get();
 
@@ -59,12 +57,12 @@ public class NegocioClienteService {
     }
 
     public NegocioCliente crear(NegocioCliente negocioCliente ) {
-        getEmailYValidar();
+        validarEmail();
         return repositorioNegocioCliente.save(negocioCliente);
     }
 
     public NegocioCliente actualizar(NegocioCliente negocioCliente,Long id) {
-        getEmailYValidar();
+        validarEmail();
 
         Optional<NegocioCliente> negocioExistente = repositorioNegocioCliente.findById(id);
         negocioExistente.get().setNombre(negocioCliente.getNombre());
@@ -74,7 +72,7 @@ public class NegocioClienteService {
     }
 
     public void eliminar(Long id ) {
-        getEmailYValidar();
+        validarEmail();
 
         repositorioNegocioCliente.deleteById(id);
     }

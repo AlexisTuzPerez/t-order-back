@@ -27,15 +27,11 @@ public class SucursalService {
         this.userRepository = userRepository;
     }
 
-    private void validarAccesoAdministrador( ) {
+    private void validarEmail( ) {
 
         String email = getCurrentUserEmail();
         User usuario = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario no encontrado"));
-
-        if (usuario.getRole() != Role.ADMIN) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Se requiere rol de administrador");
-        }
     }
 
     private String getCurrentUserEmail() {
@@ -43,24 +39,24 @@ public class SucursalService {
     }
 
     public Page<SucursalDTO> obtenerTodos(Pageable pageable) {
-        validarAccesoAdministrador();
+        validarEmail();
         Page<Sucursal> sucursales=  sucursalRepository.findAll(pageable);
         return sucursales.map(this::convertirADTO);
     }
 
     public Optional<SucursalDTO> obtenerPorId(Long id) {
-        validarAccesoAdministrador();
+        validarEmail();
         Sucursal sucursal = sucursalRepository.findById(id).get();
         return  Optional.of(convertirADTO(sucursal));
     }
 
     public Sucursal crear(Sucursal sucursal) {
-        validarAccesoAdministrador();
+        validarEmail();
         return sucursalRepository.save(sucursal);
     }
 
     public Sucursal actualizar(Sucursal sucursal, Long id) {
-        validarAccesoAdministrador();
+        validarEmail();
         Optional<Sucursal> sucursalExistente = sucursalRepository.findById(id);
 
         sucursalExistente.get().setNombre(sucursal.getNombre());
@@ -70,7 +66,7 @@ public class SucursalService {
     }
 
     public void eliminar(Long id) {
-        validarAccesoAdministrador();
+        validarEmail();
         sucursalRepository.deleteById(id);
     }
 

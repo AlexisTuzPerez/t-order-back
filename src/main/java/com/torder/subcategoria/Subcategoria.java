@@ -1,22 +1,31 @@
 package com.torder.subcategoria;
 
 
-import com.torder.modificador.Modificador;
-import com.torder.producto.Producto;
-import com.torder.sucursal.Sucursal;
-import jakarta.persistence.*;
-
 import java.util.ArrayList;
 import java.util.List;
 
+import com.torder.modificador.Modificador;
+import com.torder.producto.Producto;
+import com.torder.sucursal.Sucursal;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import lombok.Data;
+
 @Entity
+@Data
 public class Subcategoria {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String nombre;
-    private String descripcion;
+
 
     @ManyToOne
     @JoinColumn(name = "sucursal_id")

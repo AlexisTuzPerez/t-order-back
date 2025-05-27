@@ -1,10 +1,21 @@
 package com.torder.mesa;
 
-
 import com.torder.sucursal.Sucursal;
-import jakarta.persistence.*;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class Mesa {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -12,7 +23,6 @@ public class Mesa {
 
     private Integer numero;
 
-    private String estado;
 
     @ManyToOne
     @JoinColumn(name = "sucursal_id")
