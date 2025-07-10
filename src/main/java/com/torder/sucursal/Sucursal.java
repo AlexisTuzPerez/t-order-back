@@ -1,15 +1,27 @@
 
 package com.torder.sucursal;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import com.torder.mesa.Mesa;
 import com.torder.negocioCliente.NegocioCliente;
-import com.torder.producto.Producto;
+import com.torder.relaciones.DescuentoSucursal;
+import com.torder.relaciones.ProductoSucursal;
 import com.torder.subcategoria.Subcategoria;
-import jakarta.persistence.Entity;
-import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
-import lombok.Data;
 
-import java.util.List;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
 
 @Data
 @Entity
@@ -30,6 +42,8 @@ public class Sucursal {
     @Size(min = 2, max = 30, message = "El estado debe tener entre 2 y 30 caracteres")
     private String estado;
 
+    private Boolean activo;
+
     @NotNull(message = "Debe pertenecer a un negocio")
     @ManyToOne
     @JoinColumn(name = "negocio_id")
@@ -39,9 +53,12 @@ public class Sucursal {
     @OneToMany(mappedBy = "sucursal")
     private List<Mesa> mesas;
 
-    @OneToMany(mappedBy = "sucursal")
-    private List<Producto> productos;
+    @OneToMany(mappedBy = "sucursal", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<ProductoSucursal> productos = new HashSet<>();
 
     @OneToMany(mappedBy = "sucursal")
     private List<Subcategoria> subcategorias;
+
+    @OneToMany(mappedBy = "sucursal", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<DescuentoSucursal> descuentos = new HashSet<>();
 }

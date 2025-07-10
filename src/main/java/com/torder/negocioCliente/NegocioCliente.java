@@ -34,4 +34,8 @@ public class NegocioCliente {
 
     @OneToMany(mappedBy = "negocio")
     private List<User> usuarios;
+
+
+    private Boolean activo;
+
 }

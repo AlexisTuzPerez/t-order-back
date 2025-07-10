@@ -75,7 +75,7 @@ public class SucursalService {
         dto.setId(sucursal.getId());
         dto.setNombre(sucursal.getNombre());
         dto.setCuidad(sucursal.getCuidad());
-        dto.setEstado(sucursal.getEstado());
+        dto.setActivo(sucursal.getActivo());
         dto.setNegocioId(sucursal.getNegocio().getId()); // Solo el ID
         return dto;
     }

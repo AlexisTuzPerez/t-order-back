@@ -4,6 +4,7 @@ package com.torder.user;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.torder.negocioCliente.NegocioCliente;
 import com.torder.orden.Orden;
+import com.torder.sucursal.Sucursal;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -32,7 +33,7 @@ public class User implements UserDetails {
     @Column(name = "lastname", nullable = false)
     private String lastname;
 
-    @Column(name = "email", nullable = false, unique = true)
+    @Column(name = "email", nullable = false)
     private String email;
 
     @Column(name = "password", nullable = false)
@@ -46,8 +47,12 @@ public class User implements UserDetails {
 
     @NotNull(message = "Debe pertenecer a un negocio")
     @ManyToOne
-    @JoinColumn(name = "negocio_id")
+    @JoinColumn(name = "negocio_id", nullable = false)
     private NegocioCliente negocio;
+
+    @ManyToOne
+    @JoinColumn(name = "sucursal_id")
+    private Sucursal sucursal;
 
     @OneToMany(mappedBy = "usuario")
     private List<Orden> ordenes;
