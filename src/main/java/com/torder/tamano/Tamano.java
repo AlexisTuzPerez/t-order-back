@@ -1,16 +1,30 @@
 package com.torder.tamano;
 
-import com.torder.relaciones.ProductoTamano;
-import jakarta.persistence.*;
-import lombok.Data;
-import com.torder.negocioCliente.NegocioCliente;
-import com.torder.producto.Producto;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.torder.negocioCliente.NegocioCliente;
+import com.torder.producto.Producto;
+import com.torder.relaciones.ProductoTamano;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import lombok.Data;
+
 @Data
 @Entity
-@Table(name = "tamanos")
+@Table(name = "tamanos", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"nombre", "negocio_id"})
+})
 public class Tamano {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -46,5 +60,10 @@ public class Tamano {
             }
             return false;
         });
+    }
+    
+    // Método para establecer el nombre en mayúsculas
+    public void setNombre(String nombre) {
+        this.nombre = nombre != null ? nombre.toUpperCase() : null;
     }
 }

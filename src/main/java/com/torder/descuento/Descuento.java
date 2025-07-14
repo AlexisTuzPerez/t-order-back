@@ -68,9 +68,6 @@ public class Descuento {
     @Column(name = "usos_actuales")
     private Integer usosActuales = 0; // Veces que ya se ha usado
 
-    @Column(name = "descripcion_usuario")
-    private String descripcionUsuario; // Descripción amigable para mostrar al usuario
-
     @ManyToOne
     @JoinColumn(name = "negocio_id", nullable = false)
     private NegocioCliente negocio;
@@ -190,7 +187,6 @@ public class Descuento {
  *    cupon.setCodigo("WELCOME20");
  *    cupon.setUsosMaximos(100); // Máximo 100 usos
 
- *    cupon.setDescripcionUsuario("¡20% de descuento en sucursal Centro!");
  *    cupon.getSucursales().add(new DescuentoSucursal(cupon, sucursalCentro));
  * 
  * 8. CUPÓN CANTIDAD FIJA PARA MÚLTIPLES SUCURSALES:
@@ -201,7 +197,6 @@ public class Descuento {
  *    cupon.setCodigo("FIRSTORDER");
  *    cupon.setUsosMaximos(50);
  *    cupon.setMostrarEnPantalla(true);
- *    cupon.setDescripcionUsuario("¡$5 de descuento en tu primera orden!");
  *    cupon.getSucursales().add(new DescuentoSucursal(cupon, sucursalNorte));
  *    cupon.getSucursales().add(new DescuentoSucursal(cupon, sucursalSur));
  * 
@@ -212,7 +207,6 @@ public class Descuento {
  *    cupon.setProductos(Set.of(hamburguesa));
  *    cupon.setCodigo("BURGER2X1");
  *    cupon.setUsosMaximos(25);
- *    cupon.setDescripcionUsuario("¡2x1 en hamburguesas!");
  *    // Agregar a todas las sucursales
  *    for (Sucursal sucursal : negocio.getSucursales()) {
  *        cupon.getSucursales().add(new DescuentoSucursal(cupon, sucursal));

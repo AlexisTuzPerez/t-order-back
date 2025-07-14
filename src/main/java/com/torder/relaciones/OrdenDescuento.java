@@ -32,16 +32,5 @@ public class OrdenDescuento {
     @Column(name = "monto_descontado", nullable = false)
     private Double montoDescontado;
 
-    @Column(name = "motivo")
-    private String motivo; // "Descuento Happy Hour", "2x1 en hamburguesas", "Cupón WELCOME20", etc.
 
-    @Column(name = "productos_aplicados")
-    private String productosAplicados; // IDs de productos afectados por el descuento
-
-    @Column(name = "nombre_descuento")
-    private String nombreDescuento; // El nombre del descuento aplicado
-
-    // Métodos de ayuda
-
-   
 } 

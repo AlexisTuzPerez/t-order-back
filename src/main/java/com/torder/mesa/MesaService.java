@@ -1,6 +1,7 @@
 package com.torder.mesa;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -18,14 +19,9 @@ import com.torder.user.UserRepository;
 @Transactional
 public class MesaService {
 
-
     private final MesaRepository mesaRepository;
-
-
     private final SucursalRepository sucursalRepository;
-
     private final UserRepository userRepository;
-
 
     @Autowired
     public MesaService(MesaRepository mesaRepository, SucursalRepository sucursalRepository, UserRepository userRepository) {
@@ -33,10 +29,6 @@ public class MesaService {
         this.sucursalRepository = sucursalRepository;
         this.userRepository = userRepository;
     }
-
-    //Métodos Sucursal u Owner
-
-
 
     public Page<MesaDTO> getAllMesas(Pageable pageable) {
         User currentUser = getCurrentUser();
@@ -60,20 +52,21 @@ public class MesaService {
         Mesa mesa = mesaRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mesa not found with id: " + id));
 
-
         tieneAccesoMesa(currentUser, mesa);
         return convertToDTO(mesa);
-
     }
 
     public MesaDTO createMesa(MesaDTO mesaDTO) {
         User currentUser = getCurrentUser();
-
         Mesa mesa = convertToEntity(mesaDTO);
-
         tieneAccesoMesa(currentUser, mesa);
-        return convertToDTO(mesaRepository.save(mesa));
-
+        
+        try {
+            return convertToDTO(mesaRepository.save(mesa));
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, 
+                "Ya existe una mesa con el número " + mesaDTO.getNumero() + " en esta sucursal.");
+        }
     }
 
     public MesaDTO updateMesa(Long id, MesaDTO mesaDTO) {
@@ -81,16 +74,18 @@ public class MesaService {
         Mesa existingMesa = mesaRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mesa not found with id: " + id));
 
-
         existingMesa.setNumero(mesaDTO.getNumero());
         existingMesa.setSucursal(sucursalRepository.findById(mesaDTO.getSucursalId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sucursal not found with id: " + mesaDTO.getSucursalId())));
 
-
         tieneAccesoMesa(currentUser, existingMesa);
 
-        return convertToDTO(mesaRepository.save(existingMesa));
-
+        try {
+            return convertToDTO(mesaRepository.save(existingMesa));
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, 
+                "Ya existe una mesa con el número " + mesaDTO.getNumero() + " en esta sucursal.");
+        }
     }
 
     public void deleteMesa(Long id) {
@@ -98,21 +93,9 @@ public class MesaService {
         Mesa mesa = mesaRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mesa not found with id: " + id));
 
-
-
         tieneAccesoMesa(currentUser, mesa);
-
         mesaRepository.deleteById(id);
-
     }
-
-
-
-
-
-
-    //Métodos auxiliares
-
 
     private User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -137,9 +120,7 @@ public class MesaService {
                (currentUser.getRole() == Role.OWNER && currentUser.getNegocio().getId().equals(mesa.getSucursal().getNegocio().getId()))) {
                } else {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acceso denegado");
-
         }
-
     }
 
     private Mesa convertToEntity(MesaDTO mesaDTO) {
