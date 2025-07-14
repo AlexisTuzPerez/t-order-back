@@ -72,6 +72,16 @@ public class SubcategoriaService {
 
     public SubcategoriaDTO createSubcategoria(SubcategoriaDTO subcategoriaDTO) {
         User currentUser = getCurrentUser();
+        
+        // Validar que el nombre no esté vacío
+        if (subcategoriaDTO.getNombre() == null || subcategoriaDTO.getNombre().trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre de la subcategoría es obligatorio.");
+        }
+        
+        // Normalizar el nombre a mayúsculas
+        String nombreNormalizado = subcategoriaDTO.getNombre().trim().toUpperCase();
+        subcategoriaDTO.setNombre(nombreNormalizado);
+        
         Subcategoria subcategoria = convertToEntity(subcategoriaDTO);
         tieneAccesoSubcategoria(currentUser, subcategoria);
         subcategoria = subcategoriaRepository.save(subcategoria);
@@ -85,7 +95,14 @@ public class SubcategoriaService {
 
         tieneAccesoSubcategoria(currentUser, existingSubcategoria);
 
-        existingSubcategoria.setNombre(subcategoriaDTO.getNombre());
+        // Validar que el nombre no esté vacío
+        if (subcategoriaDTO.getNombre() == null || subcategoriaDTO.getNombre().trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre de la subcategoría es obligatorio.");
+        }
+        
+        // Normalizar el nombre a mayúsculas
+        String nombreNormalizado = subcategoriaDTO.getNombre().trim().toUpperCase();
+        existingSubcategoria.setNombre(nombreNormalizado);
 
         if (subcategoriaDTO.getSucursalId() != null) {
             Sucursal sucursal = sucursalRepository.findById(subcategoriaDTO.getSucursalId())
