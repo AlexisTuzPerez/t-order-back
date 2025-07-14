@@ -16,10 +16,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 @Entity
-@Data
+@Getter
+@Setter
+@ToString(exclude = {"sucursales", "productoTamanos"})
+@EqualsAndHashCode(exclude = {"sucursales", "productoTamanos"})
 public class Producto {
 
     @Id

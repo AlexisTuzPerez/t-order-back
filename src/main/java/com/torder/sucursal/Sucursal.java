@@ -21,9 +21,15 @@ import jakarta.persistence.OneToMany;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
-@Data
+@Getter
+@Setter
+@ToString(exclude = {"mesas", "productos", "subcategorias", "descuentos"})
+@EqualsAndHashCode(exclude = {"mesas", "productos", "subcategorias", "descuentos"})
 @Entity
 public class Sucursal {
     @Id
@@ -48,7 +54,6 @@ public class Sucursal {
     @ManyToOne
     @JoinColumn(name = "negocio_id")
     private NegocioCliente negocio;
-
 
     @OneToMany(mappedBy = "sucursal")
     private List<Mesa> mesas;

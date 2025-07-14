@@ -10,19 +10,27 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.Data;
+import jakarta.persistence.UniqueConstraint;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
-@Data
+@Getter
+@Setter
+@ToString(exclude = {"producto", "sucursal"})
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
-@Table(name = "producto_sucursales")
+@Table(name = "producto_sucursales", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"producto_id", "sucursal_id"})
+})
 public class ProductoSucursal {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
-
-    
     @ManyToOne
     @JoinColumn(name = "producto_id", nullable = false)
     private Producto producto;
@@ -33,21 +41,20 @@ public class ProductoSucursal {
 
     private Boolean activo;
 
-
-
-    
     // Métodos de ayuda para la relación bidireccional
     public void setProducto(Producto producto) {
         this.producto = producto;
-        if (producto != null && !producto.getSucursales().contains(this)) {
-            producto.getSucursales().add(this);
-        }
+        // Comentado para evitar duplicados en la relación bidireccional
+        // if (producto != null && !producto.getSucursales().contains(this)) {
+        //     producto.getSucursales().add(this);
+        // }
     }
     
     public void setSucursal(Sucursal sucursal) {
         this.sucursal = sucursal;
-        if (sucursal != null && !sucursal.getProductos().contains(this)) {
-            sucursal.getProductos().add(this);
-        }
+        // Comentado para evitar duplicados en la relación bidireccional
+        // if (sucursal != null && !sucursal.getProductos().contains(this)) {
+        //     sucursal.getProductos().add(this);
+        // }
     }
 }

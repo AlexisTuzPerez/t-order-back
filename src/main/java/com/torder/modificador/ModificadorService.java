@@ -98,12 +98,8 @@ public class ModificadorService {
         subcategoria.setNombre("General");
         subcategoria.setSucursal(sucursal);
         
-        // Verificar si ya existe un modificador con el mismo nombre
+        // Normalizar el nombre a mayúsculas
         String nombreNormalizado = modificadorDTO.getNombre().trim().toUpperCase();
-        if (modificadorRepository.existsByNombre(nombreNormalizado)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, 
-                "Ya existe un modificador con el nombre '" + nombreNormalizado + "'.");
-        }
         
         Modificador modificador = new Modificador();
         modificador.setNombre(nombreNormalizado); // Se convierte a mayúsculas automáticamente
@@ -115,7 +111,7 @@ public class ModificadorService {
             return convertToDTO(savedModificador);
         } catch (DataIntegrityViolationException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, 
-                "Ya existe un modificador con el nombre '" + nombreNormalizado + "'.");
+                "Error al crear el modificador. Verifique los datos.");
         }
     }
 
@@ -140,12 +136,6 @@ public class ModificadorService {
         // Normalizar el nombre a mayúsculas
         String nombreNormalizado = modificadorDTO.getNombre().trim().toUpperCase();
         
-        // Verificar si ya existe otro modificador con el mismo nombre (excluyendo el actual)
-        if (modificadorRepository.existsByNombreAndIdNot(nombreNormalizado, id)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, 
-                "Ya existe un modificador con el nombre '" + nombreNormalizado + "'.");
-        }
-
         existingModificador.setNombre(nombreNormalizado); // Se convierte a mayúsculas automáticamente
         existingModificador.setPrecio(modificadorDTO.getPrecio());
 
@@ -153,7 +143,7 @@ public class ModificadorService {
             return convertToDTO(modificadorRepository.save(existingModificador));
         } catch (DataIntegrityViolationException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, 
-                "Ya existe un modificador con el nombre '" + nombreNormalizado + "'.");
+                "Error al actualizar el modificador. Verifique los datos.");
         }
     }
 
