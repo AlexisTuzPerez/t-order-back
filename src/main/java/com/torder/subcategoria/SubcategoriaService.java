@@ -85,6 +85,11 @@ public class SubcategoriaService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuario no tiene sucursal asignada");
         }
 
+        // Convertir nombre a mayúsculas
+        if (subcategoria.getNombre() != null) {
+            subcategoria.setNombre(subcategoria.getNombre().trim().toUpperCase());
+        }
+
         // Guardar la subcategoría
         Subcategoria subcategoriaGuardada = subcategoriaRepository.save(subcategoria);
 
@@ -123,7 +128,9 @@ public class SubcategoriaService {
         }
 
         // Actualizar campos
-        subcategoriaExistente.setNombre(subcategoriaActualizada.getNombre());
+        if (subcategoriaActualizada.getNombre() != null) {
+            subcategoriaExistente.setNombre(subcategoriaActualizada.getNombre().trim().toUpperCase());
+        }
 
         Subcategoria subcategoriaGuardada = subcategoriaRepository.save(subcategoriaExistente);
         

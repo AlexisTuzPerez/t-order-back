@@ -4,19 +4,30 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
 public class ProductoDTO {
     private Long id;
+    
+    @NotBlank(message = "El nombre es obligatorio")
     private String nombre;
+    
     private Boolean activo = true;
     private String imagenUrl;
+    
+    @NotNull(message = "El precio es obligatorio")
     private Double precio;
+    
     private List<Long> sucursalesIds = new ArrayList<>();
+    
+    @NotNull(message = "La subcategoría es obligatoria")
     private Long subcategoriaId;
+    
     private String subcategoriaNombre;
-    private List<TamanoInfo> tamanos = new ArrayList<>();
+    private List<TamanoInfo> tamaños = new ArrayList<>();
     
     @Data
     public static class TamanoInfo {

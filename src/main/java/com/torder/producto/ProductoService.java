@@ -11,8 +11,12 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.torder.relaciones.ProductoSucursal;
 import com.torder.relaciones.ProductoSucursalRepository;
+import com.torder.relaciones.ProductoTamano;
 import com.torder.subcategoria.Subcategoria;
 import com.torder.subcategoria.SubcategoriaRepository;
+import com.torder.tamano.ProductoTamanoRepository;
+import com.torder.tamano.Tamano;
+import com.torder.tamano.TamanoRepository;
 import com.torder.user.User;
 import com.torder.user.UserRepository;
 
@@ -24,16 +28,22 @@ public class ProductoService {
     private final UserRepository userRepository;
     private final ProductoSucursalRepository productoSucursalRepository;
     private final SubcategoriaRepository subcategoriaRepository;
+    private final ProductoTamanoRepository productoTamanoRepository;
+    private final TamanoRepository tamanoRepository;
 
     @Autowired
     public ProductoService(ProductoRepository productoRepository, 
                           UserRepository userRepository,
                           ProductoSucursalRepository productoSucursalRepository,
-                          SubcategoriaRepository subcategoriaRepository) {
+                          SubcategoriaRepository subcategoriaRepository,
+                          ProductoTamanoRepository productoTamanoRepository,
+                          TamanoRepository tamanoRepository) {
         this.productoRepository = productoRepository;
         this.userRepository = userRepository;
         this.productoSucursalRepository = productoSucursalRepository;
         this.subcategoriaRepository = subcategoriaRepository;
+        this.productoTamanoRepository = productoTamanoRepository;
+        this.tamanoRepository = tamanoRepository;
     }
 
     private User getCurrentUser() {
@@ -79,26 +89,31 @@ public class ProductoService {
         return convertirADTO(producto);
     }
 
-    public ProductoDTO crear(ProductoDTO productoDTO) {
+    public ProductoDTO crear(ProductoCreacionDTO productoCreacionDTO) {
         User currentUser = getCurrentUser();
         if (currentUser.getSucursal() == null) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuario no tiene sucursal asignada");
         }
 
         // Validar que la subcategoría sea obligatoria
-        if (productoDTO.getSubcategoriaId() == null) {
+        if (productoCreacionDTO.getSubcategoriaId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La subcategoría es obligatoria");
         }
 
         // Crear el producto
         Producto producto = new Producto();
-        producto.setNombre(productoDTO.getNombre());
-        producto.setPrecio(productoDTO.getPrecio());
-        producto.setImagenUrl(productoDTO.getImagenUrl());
-        producto.setActivo(productoDTO.getActivo() != null ? productoDTO.getActivo() : true);
+        // Convertir nombre a mayúsculas
+        if (productoCreacionDTO.getNombre() != null) {
+            producto.setNombre(productoCreacionDTO.getNombre().trim().toUpperCase());
+        } else {
+            producto.setNombre(productoCreacionDTO.getNombre());
+        }
+        producto.setPrecio(productoCreacionDTO.getPrecio());
+        producto.setImagenUrl(productoCreacionDTO.getImagenUrl());
+        producto.setActivo(productoCreacionDTO.getActivo() != null ? productoCreacionDTO.getActivo() : true);
 
         // Asignar la subcategoría
-        Subcategoria subcategoria = subcategoriaRepository.findById(productoDTO.getSubcategoriaId())
+        Subcategoria subcategoria = subcategoriaRepository.findById(productoCreacionDTO.getSubcategoriaId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Subcategoría no encontrada"));
         producto.setSubcategoria(subcategoria);
 
@@ -113,6 +128,24 @@ public class ProductoService {
 
         productoSucursalRepository.save(nuevaRelacion);
         
+        // Procesar tamaños si se proporcionan
+        if (productoCreacionDTO.getTamaños() != null && !productoCreacionDTO.getTamaños().isEmpty()) {
+            for (ProductoCreacionDTO.TamanoCreacion tamanoCreacion : productoCreacionDTO.getTamaños()) {
+                if (tamanoCreacion.getTamanoId() != null && tamanoCreacion.getPrecio() != null) {
+                    Tamano tamano = tamanoRepository.findById(tamanoCreacion.getTamanoId())
+                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
+                                    "Tamaño con ID " + tamanoCreacion.getTamanoId() + " no encontrado"));
+                    
+                    ProductoTamano productoTamano = new ProductoTamano();
+                    productoTamano.setProducto(productoGuardado);
+                    productoTamano.setTamano(tamano);
+                    productoTamano.setPrecio(tamanoCreacion.getPrecio());
+                    
+                    productoTamanoRepository.save(productoTamano);
+                }
+            }
+        }
+        
         // Construir el DTO directamente sin recargar
         ProductoDTO resultado = new ProductoDTO();
         resultado.setId(productoGuardado.getId());
@@ -123,6 +156,26 @@ public class ProductoService {
         resultado.setSubcategoriaId(subcategoria.getId());
         resultado.setSubcategoriaNombre(subcategoria.getNombre());
         resultado.setSucursalesIds(List.of(currentUser.getSucursal().getId()));
+
+        // Incluir los tamaños en la respuesta
+        if (productoCreacionDTO.getTamaños() != null && !productoCreacionDTO.getTamaños().isEmpty()) {
+            List<ProductoDTO.TamanoInfo> tamanosInfo = productoCreacionDTO.getTamaños().stream()
+                    .map(tc -> {
+                        Tamano tamano = tamanoRepository.findById(tc.getTamanoId()).orElse(null);
+                        if (tamano != null) {
+                            return new ProductoDTO.TamanoInfo(
+                                    tamano.getId(),
+                                    tamano.getNombre(),
+                                    tamano.getDescripcion(),
+                                    tc.getPrecio()
+                            );
+                        }
+                        return null;
+                    })
+                    .filter(ti -> ti != null)
+                    .toList();
+            resultado.setTamaños(tamanosInfo);
+        }
 
         return resultado;
     }
@@ -145,7 +198,9 @@ public class ProductoService {
         }
 
         // Actualizar campos
-        productoExistente.setNombre(productoActualizado.getNombre());
+        if (productoActualizado.getNombre() != null) {
+            productoExistente.setNombre(productoActualizado.getNombre().trim().toUpperCase());
+        }
         productoExistente.setPrecio(productoActualizado.getPrecio());
 
         Producto productoGuardado = productoRepository.save(productoExistente);
@@ -153,6 +208,52 @@ public class ProductoService {
         // Recargar el producto para incluir las relaciones
         Producto productoConRelaciones = productoRepository.findByIdWithSucursales(productoGuardado.getId())
                 .orElse(productoGuardado);
+        
+        return convertirADTO(productoConRelaciones);
+    }
+
+    public ProductoDTO actualizarTamanos(Long productoId, List<ProductoCreacionDTO.TamanoCreacion> tamanosCreacion) {
+        User currentUser = getCurrentUser();
+        if (currentUser.getSucursal() == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuario no tiene sucursal asignada");
+        }
+
+        Producto producto = productoRepository.findByIdWithSucursales(productoId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
+
+        // Verificar que el producto pertenece a la sucursal del usuario
+        boolean perteneceASucursal = producto.getSucursales().stream()
+                .anyMatch(ps -> ps.getSucursal().getId().equals(currentUser.getSucursal().getId()) && ps.getActivo());
+
+        if (!perteneceASucursal) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permisos para modificar este producto");
+        }
+
+        // Eliminar tamaños existentes
+        List<ProductoTamano> tamanosExistentes = productoTamanoRepository.findByProductoId(productoId);
+        productoTamanoRepository.deleteAll(tamanosExistentes);
+
+        // Agregar nuevos tamaños
+        if (tamanosCreacion != null && !tamanosCreacion.isEmpty()) {
+            for (ProductoCreacionDTO.TamanoCreacion tamanoCreacion : tamanosCreacion) {
+                if (tamanoCreacion.getTamanoId() != null && tamanoCreacion.getPrecio() != null) {
+                    Tamano tamano = tamanoRepository.findById(tamanoCreacion.getTamanoId())
+                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
+                                    "Tamaño con ID " + tamanoCreacion.getTamanoId() + " no encontrado"));
+                    
+                    ProductoTamano productoTamano = new ProductoTamano();
+                    productoTamano.setProducto(producto);
+                    productoTamano.setTamano(tamano);
+                    productoTamano.setPrecio(tamanoCreacion.getPrecio());
+                    
+                    productoTamanoRepository.save(productoTamano);
+                }
+            }
+        }
+
+        // Recargar el producto para incluir las relaciones
+        Producto productoConRelaciones = productoRepository.findByIdWithSucursales(productoId)
+                .orElse(producto);
         
         return convertirADTO(productoConRelaciones);
     }
@@ -204,6 +305,19 @@ public class ProductoService {
                 .toList();
         
         dto.setSucursalesIds(sucursalesIds);
+        
+        // Obtener los tamaños de este producto
+        List<ProductoTamano> productoTamanos = productoTamanoRepository.findByProductoId(producto.getId());
+        List<ProductoDTO.TamanoInfo> tamanosInfo = productoTamanos.stream()
+                .map(pt -> new ProductoDTO.TamanoInfo(
+                        pt.getTamano().getId(),
+                        pt.getTamano().getNombre(),
+                        pt.getTamano().getDescripcion(),
+                        pt.getPrecio()
+                ))
+                .toList();
+        
+        dto.setTamaños(tamanosInfo);
         
         return dto;
     }

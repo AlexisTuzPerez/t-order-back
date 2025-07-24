@@ -4,12 +4,11 @@ import com.torder.producto.Producto;
 import com.torder.tamano.Tamano;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MapsId;
 import jakarta.persistence.Table;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -24,16 +23,17 @@ import lombok.ToString;
 @Table(name = "producto_tamanos")
 public class ProductoTamano {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EmbeddedId
     @EqualsAndHashCode.Include
-    private Long id;
+    private ProductoTamanoId id = new ProductoTamanoId();
     
     @ManyToOne
+    @MapsId("productoId")
     @JoinColumn(name = "producto_id", nullable = false)
     private Producto producto;
     
     @ManyToOne
+    @MapsId("tamanoId")
     @JoinColumn(name = "tamano_id", nullable = false)
     private Tamano tamano;
     
@@ -43,17 +43,21 @@ public class ProductoTamano {
     // Métodos de ayuda para la relación bidireccional
     public void setProducto(Producto producto) {
         this.producto = producto;
-        // Comentado para evitar duplicados en la relación bidireccional
-        // if (producto != null) {
-        //     producto.getProductoTamanos().add(this);
-        // }
+        if (this.id == null) {
+            this.id = new ProductoTamanoId();
+        }
+        if (producto != null) {
+            this.id.setProductoId(producto.getId());
+        }
     }
     
     public void setTamano(Tamano tamano) {
         this.tamano = tamano;
-        // Comentado para evitar duplicados en la relación bidireccional
-        // if (tamano != null) {
-        //     tamano.getProductos().add(this);
-        // }
+        if (this.id == null) {
+            this.id = new ProductoTamanoId();
+        }
+        if (tamano != null) {
+            this.id.setTamanoId(tamano.getId());
+        }
     }
 }

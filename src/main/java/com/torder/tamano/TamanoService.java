@@ -80,6 +80,11 @@ public class TamanoService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuario no tiene sucursal asignada");
         }
 
+        // Convertir nombre a mayúsculas
+        if (tamano.getNombre() != null) {
+            tamano.setNombre(tamano.getNombre().trim().toUpperCase());
+        }
+
         // Guardar el tamaño
         Tamano tamanoGuardado = tamanoRepository.save(tamano);
 
@@ -119,7 +124,9 @@ public class TamanoService {
         }
 
         // Actualizar campos
-        tamanoExistente.setNombre(tamanoActualizado.getNombre());
+        if (tamanoActualizado.getNombre() != null) {
+            tamanoExistente.setNombre(tamanoActualizado.getNombre().trim().toUpperCase());
+        }
 
         Tamano tamanoGuardado = tamanoRepository.save(tamanoExistente);
         
