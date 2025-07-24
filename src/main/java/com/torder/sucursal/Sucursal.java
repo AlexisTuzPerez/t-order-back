@@ -8,7 +8,7 @@ import com.torder.mesa.Mesa;
 import com.torder.negocioCliente.NegocioCliente;
 import com.torder.relaciones.DescuentoSucursal;
 import com.torder.relaciones.ProductoSucursal;
-import com.torder.subcategoria.Subcategoria;
+import com.torder.relaciones.SubcategoriaSucursal;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -28,12 +28,13 @@ import lombok.ToString;
 
 @Getter
 @Setter
-@ToString(exclude = {"mesas", "productos", "subcategorias", "descuentos"})
-@EqualsAndHashCode(exclude = {"mesas", "productos", "subcategorias", "descuentos"})
+@ToString(exclude = {"mesas", "productos", "subcategorias", "descuentos", "negocio"})
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
 public class Sucursal {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @NotBlank(message = "El nombre de la sucursal es obligatorio")
@@ -48,12 +49,11 @@ public class Sucursal {
     @Size(min = 2, max = 30, message = "El estado debe tener entre 2 y 30 caracteres")
     private String estado;
 
-    private Boolean activo;
-
     @NotNull(message = "Debe pertenecer a un negocio")
     @ManyToOne
     @JoinColumn(name = "negocio_id")
     private NegocioCliente negocio;
+
 
     @OneToMany(mappedBy = "sucursal")
     private List<Mesa> mesas;
@@ -61,9 +61,17 @@ public class Sucursal {
     @OneToMany(mappedBy = "sucursal", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<ProductoSucursal> productos = new HashSet<>();
 
-    @OneToMany(mappedBy = "sucursal")
-    private List<Subcategoria> subcategorias;
-
     @OneToMany(mappedBy = "sucursal", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<SubcategoriaSucursal> subcategorias = new HashSet<>();
+    
+    @OneToMany(mappedBy = "sucursal")
     private Set<DescuentoSucursal> descuentos = new HashSet<>();
+    
+    public Set<DescuentoSucursal> getDescuentos() {
+        return descuentos;
+    }
+    
+    public Boolean getActivo() {
+        return true; // Default implementation, adjust as needed
+    }
 }

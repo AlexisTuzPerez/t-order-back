@@ -3,9 +3,9 @@ package com.torder.tamano;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.torder.negocioCliente.NegocioCliente;
 import com.torder.producto.Producto;
 import com.torder.relaciones.ProductoTamano;
+import com.torder.relaciones.TamanoSucursal;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -13,11 +13,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -25,12 +22,10 @@ import lombok.ToString;
 
 @Getter
 @Setter
-@ToString(exclude = {"productos"})
+@ToString(exclude = {"productos", "sucursales"})
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
-@Table(name = "tamanos", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"nombre", "negocio_id"})
-})
+@Table(name = "tamanos")
 public class Tamano {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,13 +36,12 @@ public class Tamano {
     private String nombre;
 
     private String descripcion;
-
-    @ManyToOne
-    @JoinColumn(name = "negocio_id", nullable = false)
-    private NegocioCliente negocio;
     
     @OneToMany(mappedBy = "tamano", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<ProductoTamano> productos = new HashSet<>();
+    
+    @OneToMany(mappedBy = "tamano", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<TamanoSucursal> sucursales = new HashSet<>();
     
     // Método de ayuda para agregar un producto a este tamaño
     public void addProducto(Producto producto, Double precio) {
@@ -67,10 +61,5 @@ public class Tamano {
             }
             return false;
         });
-    }
-    
-    // Método para establecer el nombre en mayúsculas
-    public void setNombre(String nombre) {
-        this.nombre = nombre != null ? nombre.toUpperCase() : null;
     }
 }

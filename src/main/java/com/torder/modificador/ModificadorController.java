@@ -3,12 +3,10 @@ package com.torder.modificador;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/modificadores")
+@CrossOrigin(origins = "*")
 public class ModificadorController {
 
     private final ModificadorService modificadorService;
@@ -30,15 +29,14 @@ public class ModificadorController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ModificadorDTO>> getAllModificadores(Pageable pageable) {
-        Page<ModificadorDTO> page = modificadorService.getAllModificadores(
-                PageRequest.of(
-                        pageable.getPageNumber(),
-                        pageable.getPageSize(),
-                        pageable.getSortOr(Sort.by(Sort.Direction.ASC, "id"))
-                )
-        );
-        return ResponseEntity.ok(page.getContent());
+    @PreAuthorize("hasRole('SUCURSAL')")
+    public ResponseEntity<List<ModificadorDTO>> obtenerModificadoresDeSucursal() {
+        try {
+            List<ModificadorDTO> modificadores = modificadorService.obtenerModificadoresDeSucursal();
+            return ResponseEntity.ok(modificadores);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @GetMapping("/{id}")

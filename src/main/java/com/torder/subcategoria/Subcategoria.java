@@ -5,14 +5,12 @@ import java.util.List;
 
 import com.torder.modificador.Modificador;
 import com.torder.producto.Producto;
-import com.torder.sucursal.Sucursal;
+import com.torder.relaciones.SubcategoriaSucursal;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -22,8 +20,8 @@ import lombok.ToString;
 @Entity
 @Getter
 @Setter
-@ToString(exclude = {"productos", "modificadores"})
-@EqualsAndHashCode(exclude = {"productos", "modificadores"})
+@ToString(exclude = {"productos", "modificadores", "sucursales"})
+@EqualsAndHashCode(exclude = {"productos", "modificadores", "sucursales"})
 public class Subcategoria {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,9 +29,8 @@ public class Subcategoria {
 
     private String nombre;
 
-    @ManyToOne
-    @JoinColumn(name = "sucursal_id")
-    private Sucursal sucursal;
+    @OneToMany(mappedBy = "subcategoria")
+    private List<SubcategoriaSucursal> sucursales = new ArrayList<>();
 
     @OneToMany(mappedBy = "subcategoria")
     private List<Producto> productos = new ArrayList<>();

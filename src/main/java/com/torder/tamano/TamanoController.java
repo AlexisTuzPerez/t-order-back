@@ -3,12 +3,10 @@ package com.torder.tamano;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,8 +16,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/tamanos")
+@CrossOrigin(origins = "*")
 public class TamanoController {
 
     private final TamanoService tamanoService;
@@ -27,50 +28,60 @@ public class TamanoController {
     @Autowired
     public TamanoController(TamanoService tamanoService) {
         this.tamanoService = tamanoService;
-        System.out.println("=== DEBUG: TamanoController initialized ===");
     }
 
     @GetMapping
-    public ResponseEntity<List<TamanoDTO>> getAllTamanos(Pageable pageable) {
-        System.out.println("=== DEBUG: Controller getAllTamanos called ===");
-        Page<TamanoDTO> page = tamanoService.getAllTamanos(
-                PageRequest.of(
-                        pageable.getPageNumber(),
-                        pageable.getPageSize(),
-                        pageable.getSortOr(Sort.by(Sort.Direction.ASC, "id"))
-                )
-        );
-        System.out.println("DEBUG: Returning " + page.getContent().size() + " tamanos");
-        return ResponseEntity.ok(page.getContent());
+    @PreAuthorize("hasRole('SUCURSAL')")
+    public ResponseEntity<List<TamanoDTO>> obtenerTamanosDeSucursal() {
+        try {
+            List<TamanoDTO> tamanos = tamanoService.obtenerTamanosDeSucursal();
+            return ResponseEntity.ok(tamanos);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TamanoDTO> getTamanoById(@PathVariable Long id) {
-        TamanoDTO tamanoDTO = tamanoService.getTamanoById(id);
-        return ResponseEntity.ok(tamanoDTO);
+    @PreAuthorize("hasRole('SUCURSAL')")
+    public ResponseEntity<TamanoDTO> obtenerPorId(@PathVariable Long id) {
+        try {
+            TamanoDTO tamano = tamanoService.obtenerPorId(id);
+            return ResponseEntity.ok(tamano);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
     }
 
     @PostMapping
-    public ResponseEntity<TamanoDTO> createTamano(@RequestBody TamanoDTO tamanoDTO) {
-        TamanoDTO createdTamano = tamanoService.createTamano(tamanoDTO);
-        return new ResponseEntity<>(createdTamano, HttpStatus.CREATED);
+    @PreAuthorize("hasRole('SUCURSAL')")
+    public ResponseEntity<TamanoDTO> crear(@Valid @RequestBody Tamano tamano) {
+        try {
+            TamanoDTO tamanoCreado = tamanoService.crear(tamano);
+            return ResponseEntity.status(HttpStatus.CREATED).body(tamanoCreado);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<TamanoDTO> updateTamano(@PathVariable Long id, @RequestBody TamanoDTO tamanoDTO) {
-        TamanoDTO updatedTamano = tamanoService.updateTamano(id, tamanoDTO);
-        return ResponseEntity.ok(updatedTamano);
+    @PreAuthorize("hasRole('SUCURSAL')")
+    public ResponseEntity<TamanoDTO> actualizar(@PathVariable Long id, @Valid @RequestBody Tamano tamano) {
+        try {
+            TamanoDTO tamanoActualizado = tamanoService.actualizar(id, tamano);
+            return ResponseEntity.ok(tamanoActualizado);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTamano(@PathVariable Long id) {
-        tamanoService.deleteTamano(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/test")
-    public ResponseEntity<String> testAuth() {
-        System.out.println("=== DEBUG: Controller testAuth called ===");
-        return ResponseEntity.ok("Autenticación funcionando correctamente");
+    @PreAuthorize("hasRole('SUCURSAL')")
+    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        try {
+            tamanoService.eliminar(id);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
     }
 } 

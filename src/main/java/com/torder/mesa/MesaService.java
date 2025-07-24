@@ -58,8 +58,39 @@ public class MesaService {
 
     public MesaDTO createMesa(MesaDTO mesaDTO) {
         User currentUser = getCurrentUser();
-        Mesa mesa = convertToEntity(mesaDTO);
-        tieneAccesoMesa(currentUser, mesa);
+        
+        // Validar que el número de mesa no esté vacío
+        if (mesaDTO.getNumero() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El número de mesa es obligatorio.");
+        }
+        
+        // Validar que la sucursal sea obligatoria
+        if (mesaDTO.getSucursalId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La sucursal es obligatoria.");
+        }
+        
+        // Obtener la sucursal
+        com.torder.sucursal.Sucursal sucursal = sucursalRepository.findById(mesaDTO.getSucursalId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sucursal not found with id: " + mesaDTO.getSucursalId()));
+        
+        // Validaciones según el rol del usuario
+        if (currentUser.getRole() == Role.SUCURSAL) {
+            // Usuario SUCURSAL solo puede crear mesas en su propia sucursal
+            if (!sucursal.getId().equals(currentUser.getSucursal().getId())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, 
+                    "Usuario SUCURSAL solo puede crear mesas en su propia sucursal (ID: " + currentUser.getSucursal().getId() + ")");
+            }
+        } else if (currentUser.getRole() == Role.OWNER) {
+            // OWNER solo puede crear mesas en sucursales de su negocio
+            if (!sucursal.getNegocio().getId().equals(currentUser.getNegocio().getId())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No puedes crear mesas en sucursales de otros negocios.");
+            }
+        }
+        // ADMIN puede crear mesas en cualquier sucursal
+        
+        Mesa mesa = new Mesa();
+        mesa.setNumero(mesaDTO.getNumero());
+        mesa.setSucursal(sucursal);
         
         try {
             return convertToDTO(mesaRepository.save(mesa));
@@ -74,11 +105,39 @@ public class MesaService {
         Mesa existingMesa = mesaRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mesa not found with id: " + id));
 
-        existingMesa.setNumero(mesaDTO.getNumero());
-        existingMesa.setSucursal(sucursalRepository.findById(mesaDTO.getSucursalId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sucursal not found with id: " + mesaDTO.getSucursalId())));
-
         tieneAccesoMesa(currentUser, existingMesa);
+
+        // Validar que el número de mesa no esté vacío
+        if (mesaDTO.getNumero() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El número de mesa es obligatorio.");
+        }
+        
+        // Validar que la sucursal sea obligatoria
+        if (mesaDTO.getSucursalId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La sucursal es obligatoria.");
+        }
+        
+        // Obtener la sucursal
+        com.torder.sucursal.Sucursal sucursal = sucursalRepository.findById(mesaDTO.getSucursalId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sucursal not found with id: " + mesaDTO.getSucursalId()));
+        
+        // Validaciones según el rol del usuario
+        if (currentUser.getRole() == Role.SUCURSAL) {
+            // Usuario SUCURSAL solo puede actualizar mesas en su propia sucursal
+            if (!sucursal.getId().equals(currentUser.getSucursal().getId())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, 
+                    "Usuario SUCURSAL solo puede actualizar mesas en su propia sucursal (ID: " + currentUser.getSucursal().getId() + ")");
+            }
+        } else if (currentUser.getRole() == Role.OWNER) {
+            // OWNER solo puede actualizar mesas en sucursales de su negocio
+            if (!sucursal.getNegocio().getId().equals(currentUser.getNegocio().getId())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No puedes actualizar mesas en sucursales de otros negocios.");
+            }
+        }
+        // ADMIN puede actualizar mesas en cualquier sucursal
+
+        existingMesa.setNumero(mesaDTO.getNumero());
+        existingMesa.setSucursal(sucursal);
 
         try {
             return convertToDTO(mesaRepository.save(existingMesa));

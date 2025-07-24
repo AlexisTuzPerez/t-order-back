@@ -13,38 +13,10 @@ public class ProductoDTO {
     private Boolean activo = true;
     private String imagenUrl;
     private Double precio;
-    private Long negocioId;
-    private String negocioNombre;
-    private List<SucursalInfo> sucursales = new ArrayList<>();
+    private List<Long> sucursalesIds = new ArrayList<>();
     private Long subcategoriaId;
     private String subcategoriaNombre;
     private List<TamanoInfo> tamanos = new ArrayList<>();
-    
-    @Data
-    public static class SucursalInfo {
-        private Long id;
-        private String nombre;
-        
-        public SucursalInfo() {}
-        
-        public SucursalInfo(Long id, String nombre) {
-            this.id = id;
-            this.nombre = nombre;
-        }
-        
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            SucursalInfo that = (SucursalInfo) o;
-            return Objects.equals(id, that.id);
-        }
-        
-        @Override
-        public int hashCode() {
-            return Objects.hash(id);
-        }
-    }
     
     @Data
     public static class TamanoInfo {

@@ -1,5 +1,7 @@
 package com.torder.modificador;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -10,9 +12,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.torder.relaciones.ModificadorSucursal;
+import com.torder.relaciones.ModificadorSucursalRepository;
 import com.torder.subcategoria.Subcategoria;
 import com.torder.subcategoria.SubcategoriaRepository;
 import com.torder.sucursal.Sucursal;
+import com.torder.sucursal.SucursalRepository;
 import com.torder.user.Role;
 import com.torder.user.User;
 import com.torder.user.UserRepository;
@@ -24,12 +29,20 @@ public class ModificadorService {
     private final ModificadorRepository modificadorRepository;
     private final SubcategoriaRepository subcategoriaRepository;
     private final UserRepository userRepository;
+    private final SucursalRepository sucursalRepository;
+    private final ModificadorSucursalRepository modificadorSucursalRepository;
 
     @Autowired
-    public ModificadorService(ModificadorRepository modificadorRepository, SubcategoriaRepository subcategoriaRepository, UserRepository userRepository) {
+    public ModificadorService(ModificadorRepository modificadorRepository, 
+                             SubcategoriaRepository subcategoriaRepository, 
+                             UserRepository userRepository,
+                             SucursalRepository sucursalRepository,
+                             ModificadorSucursalRepository modificadorSucursalRepository) {
         this.modificadorRepository = modificadorRepository;
         this.subcategoriaRepository = subcategoriaRepository;
         this.userRepository = userRepository;
+        this.sucursalRepository = sucursalRepository;
+        this.modificadorSucursalRepository = modificadorSucursalRepository;
     }
 
     public Page<ModificadorDTO> getAllModificadores(Pageable pageable) {
@@ -38,19 +51,33 @@ public class ModificadorService {
         if (currentUser.getRole() == Role.ADMIN) {
             Page<Modificador> modificadores = modificadorRepository.findAll(pageable);
             return modificadores.map(this::convertToDTO);
-        } else if (currentUser.getRole() == Role.OWNER && currentUser.getSucursal() != null) {
-            Page<Modificador> modificadores = modificadorRepository.findBySubcategoriaSucursal(currentUser.getSucursal(), pageable);
+        } else if (currentUser.getRole() == Role.OWNER) {
+            // OWNER puede ver modificadores de todas las sucursales de su negocio
+            List<Sucursal> sucursalesNegocio = sucursalRepository.findByNegocioId(currentUser.getNegocio().getId());
+            Page<Modificador> modificadores = modificadorRepository.findBySucursalesSucursalIdIn(
+                sucursalesNegocio.stream().map(Sucursal::getId).toList(), pageable);
             return modificadores.map(this::convertToDTO);
-        } else if (currentUser.getRole() == Role.SUCURSAL && currentUser.getSucursal() != null) {
-            try {
-                Page<Modificador> modificadores = modificadorRepository.findBySubcategoriaSucursal(currentUser.getSucursal(), pageable);
-                return modificadores.map(this::convertToDTO);
-            } catch (Exception e) {
-                throw e;
+        } else if (currentUser.getRole() == Role.SUCURSAL) {
+            // SUCURSAL solo puede ver modificadores de su propia sucursal
+            if (currentUser.getSucursal() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Usuario SUCURSAL debe tener una sucursal asignada.");
             }
+            Page<Modificador> modificadores = modificadorRepository.findBySucursalesSucursalId(
+                currentUser.getSucursal().getId(), pageable);
+            return modificadores.map(this::convertToDTO);
         } else {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acceso denegado. Solo ADMIN, OWNER y SUCURSAL pueden acceder a modificadores.");
         }
+    }
+
+    public List<ModificadorDTO> obtenerModificadoresDeSucursal() {
+        User currentUser = getCurrentUser();
+        if (currentUser.getSucursal() == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuario no tiene sucursal asignada");
+        }
+
+        List<Modificador> modificadores = modificadorRepository.findBySucursalId(currentUser.getSucursal().getId());
+        return modificadores.stream().map(this::convertToDTO).toList();
     }
 
     public ModificadorDTO getModificadorById(Long id) {
@@ -70,10 +97,6 @@ public class ModificadorService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acceso denegado. Solo ADMIN, OWNER y SUCURSAL pueden crear modificadores.");
         }
         
-        if ((currentUser.getRole() == Role.OWNER || currentUser.getRole() == Role.SUCURSAL) && currentUser.getSucursal() == null) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuario " + currentUser.getRole() + " debe tener una sucursal asignada.");
-        }
-        
         // Validar que el nombre no esté vacío
         if (modificadorDTO.getNombre() == null || modificadorDTO.getNombre().trim().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre del modificador es obligatorio.");
@@ -84,30 +107,94 @@ public class ModificadorService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El precio del modificador debe ser mayor o igual a 0.");
         }
         
-        // Obtener la sucursal del usuario autenticado
-        Sucursal sucursal = currentUser.getSucursal();
-        if (sucursal == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Usuario no tiene sucursal asignada.");
+        // Validar que la subcategoría sea obligatoria
+        if (modificadorDTO.getSubcategoriaId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La subcategoría es obligatoria.");
         }
         
-        // Crear una subcategoría temporal o usar una existente
-        // Por ahora, vamos a crear un modificador sin subcategoría específica
-        // TODO: Implementar lógica para seleccionar subcategoría
-        Subcategoria subcategoria = new Subcategoria();
-        subcategoria.setId(1L); // Temporal - necesitamos implementar la lógica correcta
-        subcategoria.setNombre("General");
-        subcategoria.setSucursal(sucursal);
+        // Obtener la subcategoría
+        Subcategoria subcategoria = subcategoriaRepository.findById(modificadorDTO.getSubcategoriaId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Subcategoría not found with id: " + modificadorDTO.getSubcategoriaId()));
         
-        // Normalizar el nombre a mayúsculas
-        String nombreNormalizado = modificadorDTO.getNombre().trim().toUpperCase();
-        
+        // Crear el modificador
         Modificador modificador = new Modificador();
-        modificador.setNombre(nombreNormalizado); // Se convierte a mayúsculas automáticamente
+        modificador.setNombre(modificadorDTO.getNombre().trim().toUpperCase());
         modificador.setPrecio(modificadorDTO.getPrecio());
         modificador.setSubcategoria(subcategoria);
         
+        // Guardar el modificador primero
+        Modificador savedModificador = modificadorRepository.save(modificador);
+        
+        // Manejar la asignación a sucursales
+        if (currentUser.getRole() == Role.SUCURSAL) {
+            // Usuario SUCURSAL no puede especificar sucursales, se asigna automáticamente a su sucursal
+            if (modificadorDTO.getSucursalesIds() != null && !modificadorDTO.getSucursalesIds().isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, 
+                    "Usuario SUCURSAL no puede especificar sucursales. El modificador se asignará automáticamente a su sucursal.");
+            }
+            
+            // Asignar automáticamente a la sucursal del usuario
+            Sucursal sucursalUsuario = currentUser.getSucursal();
+            System.out.println("Usuario SUCURSAL - Asignando modificador automáticamente a su sucursal: " + sucursalUsuario.getId() + " - " + sucursalUsuario.getNombre());
+            
+            ModificadorSucursal modificadorSucursal = new ModificadorSucursal();
+            modificadorSucursal.setModificador(savedModificador);
+            modificadorSucursal.setSucursal(sucursalUsuario);
+            modificadorSucursal.setActivo(true);
+            
+            // Guardar la relación explícitamente
+            ModificadorSucursal savedModificadorSucursal = modificadorSucursalRepository.save(modificadorSucursal);
+            savedModificador.getSucursales().add(savedModificadorSucursal);
+        } else {
+            // ADMIN y OWNER pueden especificar sucursales
+            if (modificadorDTO.getSucursalesIds() != null && !modificadorDTO.getSucursalesIds().isEmpty()) {
+                // Procesar sucursales específicas
+                for (Long sucursalId : modificadorDTO.getSucursalesIds()) {
+                    Sucursal sucursal = sucursalRepository.findById(sucursalId)
+                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sucursal not found with id: " + sucursalId));
+                    
+                    // Validación para OWNER (solo puede asignar a sucursales de su negocio)
+                    if (currentUser.getRole() == Role.OWNER && !sucursal.getNegocio().getId().equals(currentUser.getNegocio().getId())) {
+                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No puedes asignar modificadores a sucursales de otros negocios.");
+                    }
+                    
+                    ModificadorSucursal modificadorSucursal = new ModificadorSucursal();
+                    modificadorSucursal.setModificador(savedModificador);
+                    modificadorSucursal.setSucursal(sucursal);
+                    modificadorSucursal.setActivo(true);
+                    
+                    // Guardar la relación explícitamente
+                    ModificadorSucursal savedModificadorSucursal = modificadorSucursalRepository.save(modificadorSucursal);
+                    savedModificador.getSucursales().add(savedModificadorSucursal);
+                }
+            } else {
+                // No se especificaron sucursales, asignar a todas las sucursales del negocio
+                Long negocioId = currentUser.getRole() == Role.ADMIN ? 
+                    subcategoria.getSucursales().stream()
+                        .filter(ss -> ss.getActivo())
+                        .map(ss -> ss.getSucursal().getNegocio().getId())
+                        .findFirst()
+                        .orElse(currentUser.getNegocio().getId()) : 
+                    currentUser.getNegocio().getId();
+                List<Sucursal> sucursalesNegocio = sucursalRepository.findByNegocioId(negocioId);
+                
+                System.out.println("Usuario " + currentUser.getRole() + " - Asignando modificador a todas las sucursales del negocio " + negocioId + " (" + sucursalesNegocio.size() + " sucursales)");
+                
+                for (Sucursal sucursal : sucursalesNegocio) {
+                    System.out.println("Asignando modificador a sucursal: " + sucursal.getId() + " - " + sucursal.getNombre());
+                    ModificadorSucursal modificadorSucursal = new ModificadorSucursal();
+                    modificadorSucursal.setModificador(savedModificador);
+                    modificadorSucursal.setSucursal(sucursal);
+                    modificadorSucursal.setActivo(true);
+                    
+                    // Guardar la relación explícitamente
+                    ModificadorSucursal savedModificadorSucursal = modificadorSucursalRepository.save(modificadorSucursal);
+                    savedModificador.getSucursales().add(savedModificadorSucursal);
+                }
+            }
+        }
+        
         try {
-            Modificador savedModificador = modificadorRepository.save(modificador);
             return convertToDTO(savedModificador);
         } catch (DataIntegrityViolationException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, 
@@ -153,6 +240,13 @@ public class ModificadorService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Modificador not found with id: " + id));
 
         tieneAccesoModificador(currentUser, modificador);
+        
+        // Eliminar físicamente las relaciones con sucursales
+        modificador.getSucursales().stream()
+                .filter(ms -> ms.getSucursal().getId().equals(currentUser.getSucursal().getId()))
+                .forEach(ms -> modificadorSucursalRepository.delete(ms));
+
+        // Eliminar físicamente el modificador
         modificadorRepository.deleteById(id);
     }
 
@@ -174,22 +268,41 @@ public class ModificadorService {
         modificadorDTO.setNombre(modificador.getNombre());
         modificadorDTO.setPrecio(modificador.getPrecio());
         if (modificador.getSubcategoria() != null) {
+            modificadorDTO.setSubcategoriaId(modificador.getSubcategoria().getId());
             modificadorDTO.setSubcategoriaNombre(modificador.getSubcategoria().getNombre());
         }
+        
+        // Cargar sucursales desde la base de datos
+        if (modificador.getSucursales() != null && !modificador.getSucursales().isEmpty()) {
+            List<Long> sucursalesIds = modificador.getSucursales().stream()
+                    .map(ms -> ms.getSucursal().getId())
+                    .distinct()
+                    .toList();
+            modificadorDTO.setSucursalesIds(sucursalesIds);
+        }
+        
         return modificadorDTO;
     }
 
     private void tieneAccesoModificador(User currentUser, Modificador modificador) {
         if (currentUser.getRole() == Role.ADMIN) {
             return; // ADMIN puede acceder a cualquier modificador
-        } else if ((currentUser.getRole() == Role.OWNER || currentUser.getRole() == Role.SUCURSAL) && 
-                   currentUser.getSucursal() != null && 
-                   modificador.getSubcategoria() != null &&
-                   modificador.getSubcategoria().getSucursal() != null &&
-                   currentUser.getSucursal().getId().equals(modificador.getSubcategoria().getSucursal().getId())) {
-            return; // OWNER y SUCURSAL pueden acceder solo a modificadores de su sucursal
-        } else {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acceso denegado. Solo ADMIN, OWNER y SUCURSAL de la sucursal correspondiente pueden acceder.");
+        } else if (currentUser.getRole() == Role.OWNER) {
+            // OWNER puede acceder a modificadores de su negocio
+            if (modificador.getSucursales() != null && 
+                modificador.getSucursales().stream()
+                    .anyMatch(ms -> ms.getSucursal().getNegocio().getId().equals(currentUser.getNegocio().getId()))) {
+                return;
+            }
+        } else if (currentUser.getRole() == Role.SUCURSAL) {
+            // SUCURSAL puede acceder solo a modificadores de su sucursal
+            if (modificador.getSucursales() != null && 
+                modificador.getSucursales().stream()
+                    .anyMatch(ms -> ms.getSucursal().getId().equals(currentUser.getSucursal().getId()))) {
+                return;
+            }
         }
+        
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acceso denegado. Solo ADMIN, OWNER de su negocio y SUCURSAL de su sucursal pueden acceder.");
     }
 } 

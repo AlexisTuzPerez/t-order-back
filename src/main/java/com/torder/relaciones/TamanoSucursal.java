@@ -1,7 +1,7 @@
 package com.torder.relaciones;
 
-import com.torder.descuento.Descuento;
 import com.torder.sucursal.Sucursal;
+import com.torder.tamano.Tamano;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,40 +18,26 @@ import lombok.ToString;
 
 @Getter
 @Setter
-@ToString(exclude = {"descuento", "sucursal"})
+@ToString(exclude = {"tamano", "sucursal"})
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
-@Table(name = "descuento_sucursales")
-public class DescuentoSucursal {
+@Table(name = "tamano_sucursales", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"tamano_id", "sucursal_id"})
+})
+public class TamanoSucursal {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @EqualsAndHashCode.Include
     private Long id;
-    
+
     @ManyToOne
-    @JoinColumn(name = "descuento_id", nullable = false)
-    private Descuento descuento;
+    @JoinColumn(name = "tamano_id", nullable = false)
+    private Tamano tamano;
     
     @ManyToOne
     @JoinColumn(name = "sucursal_id", nullable = false)
     private Sucursal sucursal;
 
     private Boolean activo = true;
-
-        
-    // Métodos de ayuda para la relación bidireccional
-    public void setDescuento(Descuento descuento) {
-        this.descuento = descuento;
-        if (descuento != null && !descuento.getSucursales().contains(this)) {
-            descuento.getSucursales().add(this);
-        }
-    }
-    
-    public void setSucursal(Sucursal sucursal) {
-        this.sucursal = sucursal;
-        if (sucursal != null && !sucursal.getDescuentos().contains(this)) {
-            sucursal.getDescuentos().add(this);
-        }
-    }
 } 

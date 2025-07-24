@@ -1,15 +1,11 @@
 package com.torder.orden;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.torder.mesa.Mesa;
-import com.torder.relaciones.OrdenDescuento;
 import com.torder.relaciones.OrdenProducto;
 import com.torder.user.User;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -25,6 +21,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
 
 @Data
 @Builder
@@ -43,14 +40,7 @@ public class Orden {
 
     private String notas;
 
-    @Column(name = "subtotal")
-    private Double subtotal; // Total antes de descuentos
-
-    @Column(name = "total_descuentos")
-    private Double totalDescuentos = 0.0; // Suma de todos los descuentos aplicados (automáticos + cupones)
-
-    @Column(name = "total_final")
-    private Double totalFinal; // Total después de descuentos
+    private Double total;
 
     @ManyToOne
     @JoinColumn(name = "usuario_id")
@@ -60,10 +50,7 @@ public class Orden {
     @JoinColumn(name = "mesa_id")
     private Mesa mesa;
 
-    @OneToMany(mappedBy = "orden", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OrdenProducto> items = new ArrayList<>();
-
-    @OneToMany(mappedBy = "orden", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OrdenDescuento> descuentos = new ArrayList<>();
+    @OneToMany(mappedBy = "orden")
+    private List<OrdenProducto> items;
 }
 

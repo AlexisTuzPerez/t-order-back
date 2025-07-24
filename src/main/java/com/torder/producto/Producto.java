@@ -3,7 +3,6 @@ package com.torder.producto;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.torder.negocioCliente.NegocioCliente;
 import com.torder.relaciones.ProductoSucursal;
 import com.torder.relaciones.ProductoTamano;
 import com.torder.subcategoria.Subcategoria;
@@ -24,22 +23,19 @@ import lombok.ToString;
 @Entity
 @Getter
 @Setter
-@ToString(exclude = {"sucursales", "productoTamanos"})
-@EqualsAndHashCode(exclude = {"sucursales", "productoTamanos"})
+@ToString(exclude = {"sucursales", "productoTamanos", "subcategoria"})
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Producto {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     private String nombre;
     private Boolean activo = true;
     private String imagenUrl;
     private Double precio;
-
-    @ManyToOne
-    @JoinColumn(name = "negocio_id", nullable = false)
-    private NegocioCliente negocio;
 
     @OneToMany(mappedBy = "producto", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<ProductoSucursal> sucursales = new HashSet<>();
