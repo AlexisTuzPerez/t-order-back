@@ -9,5 +9,4 @@ import org.springframework.stereotype.Repository;
 public interface SucursalRepository extends JpaRepository<Sucursal, Long> {
     
     List<Sucursal> findByNegocioId(Long negocioId);
-    
 }

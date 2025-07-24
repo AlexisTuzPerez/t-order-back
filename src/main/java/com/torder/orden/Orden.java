@@ -1,5 +1,6 @@
 package com.torder.orden;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.torder.mesa.Mesa;
@@ -15,6 +16,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -42,6 +44,8 @@ public class Orden {
 
     private Double total;
 
+    private LocalDateTime fechaCreacion;
+
     @ManyToOne
     @JoinColumn(name = "usuario_id")
     private User usuario;
@@ -50,7 +54,15 @@ public class Orden {
     @JoinColumn(name = "mesa_id")
     private Mesa mesa;
 
-    @OneToMany(mappedBy = "orden")
+    @OneToMany(mappedBy = "orden", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
     private List<OrdenProducto> items;
+
+    @PrePersist
+    protected void onCreate() {
+        fechaCreacion = LocalDateTime.now();
+        if (estado == null) {
+            estado = Status.PENDIENTE;
+        }
+    }
 }
 

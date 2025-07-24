@@ -262,7 +262,7 @@ public class ModificadorService {
         return user;
     }
 
-    private ModificadorDTO convertToDTO(Modificador modificador) {
+    public ModificadorDTO convertToDTO(Modificador modificador) {
         ModificadorDTO modificadorDTO = new ModificadorDTO();
         modificadorDTO.setId(modificador.getId());
         modificadorDTO.setNombre(modificador.getNombre());

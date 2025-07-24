@@ -167,7 +167,7 @@ public class SubcategoriaService {
         subcategoriaRepository.delete(subcategoria);
     }
 
-    private SubcategoriaDTO convertirADTO(Subcategoria subcategoria) {
+    public SubcategoriaDTO convertirADTO(Subcategoria subcategoria) {
         SubcategoriaDTO dto = new SubcategoriaDTO();
         dto.setId(subcategoria.getId());
         dto.setNombre(subcategoria.getNombre());

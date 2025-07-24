@@ -284,7 +284,7 @@ public class ProductoService {
         productoRepository.delete(producto);
     }
 
-    private ProductoDTO convertirADTO(Producto producto) {
+    public ProductoDTO convertirADTO(Producto producto) {
         ProductoDTO dto = new ProductoDTO();
         dto.setId(producto.getId());
         dto.setNombre(producto.getNombre());
